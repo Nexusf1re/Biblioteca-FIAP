@@ -9,6 +9,7 @@ import com.fiap.biblioteca.dto.usuario.UsuarioResponse;
 import com.fiap.biblioteca.exception.RecursoNaoEncontradoException;
 import com.fiap.biblioteca.exception.RegraNegocioException;
 import com.fiap.biblioteca.repository.EmprestimoRepository;
+import com.fiap.biblioteca.repository.ReservaRepository;
 import com.fiap.biblioteca.repository.UsuarioRepository;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -19,10 +20,14 @@ public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
     private final EmprestimoRepository emprestimoRepository;
+    private final ReservaRepository reservaRepository;
 
-    public UsuarioService(UsuarioRepository usuarioRepository, EmprestimoRepository emprestimoRepository) {
+    public UsuarioService(UsuarioRepository usuarioRepository,
+                          EmprestimoRepository emprestimoRepository,
+                          ReservaRepository reservaRepository) {
         this.usuarioRepository = usuarioRepository;
         this.emprestimoRepository = emprestimoRepository;
+        this.reservaRepository = reservaRepository;
     }
 
     @Transactional
@@ -31,6 +36,9 @@ public class UsuarioService {
             throw new RegraNegocioException("Ja existe um usuario cadastrado com o e-mail " + req.email());
         }
         Usuario usuario = new Usuario(req.nome(), req.email(), req.tipo());
+        if (req.ativo() != null) {
+            usuario.setAtivo(req.ativo());
+        }
         return UsuarioResponse.from(usuarioRepository.save(usuario));
     }
 
@@ -53,14 +61,30 @@ public class UsuarioService {
         usuario.setNome(req.nome());
         usuario.setEmail(req.email());
         usuario.setTipo(req.tipo());
+        // 'ativo' e opcional no PUT: se vier nulo, mantem o valor atual; envie false para inativar
+        if (req.ativo() != null) {
+            usuario.setAtivo(req.ativo());
+        }
         return UsuarioResponse.from(usuario);
     }
 
     @Transactional
     public void excluir(Long id) {
         Usuario usuario = obter(id);
+        // emprestimos ativos = caso mais comum, mensagem mais especifica
         if (emprestimoRepository.existsByUsuarioIdAndStatus(id, StatusEmprestimo.ATIVO)) {
             throw new RegraNegocioException("Nao e possivel excluir um usuario que possui emprestimos ativos");
+        }
+        // emprestimos ja devolvidos continuam referenciando o usuario (FK); apagar perderia o historico
+        if (emprestimoRepository.existsByUsuarioId(id)) {
+            throw new RegraNegocioException(
+                    "Nao e possivel excluir um usuario que possui historico de emprestimos. "
+                            + "Se necessario, inative-o via PUT /api/usuarios/" + id + " com \"ativo\": false");
+        }
+        if (reservaRepository.existsByUsuarioId(id)) {
+            throw new RegraNegocioException(
+                    "Nao e possivel excluir um usuario que possui reservas registradas. "
+                            + "Se necessario, inative-o via PUT /api/usuarios/" + id + " com \"ativo\": false");
         }
         usuarioRepository.delete(usuario);
     }

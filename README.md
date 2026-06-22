@@ -85,9 +85,24 @@ Tudo embaixo de `/api`. A lista completa com exemplos está no Swagger, mas em r
 - `POST /usuarios`
 - `GET /usuarios`
 - `GET /usuarios/{id}`
-- `PUT /usuarios/{id}`
+- `PUT /usuarios/{id}` – altera os dados; `ativo` é opcional (envie `false` pra inativar)
 - `DELETE /usuarios/{id}` – mesma trava do livro
 - `GET /usuarios/{id}/emprestimos` – histórico
+
+Body completo do `PUT /usuarios/{id}` (o `ativo` é opcional – se omitir, mantém o valor atual):
+
+```json
+{
+  "nome": "Maria Silva",
+  "email": "maria.silva@fiap.com.br",
+  "tipo": "ALUNO",
+  "ativo": false
+}
+```
+
+Não dá pra excluir um usuário (nem um livro) que já tem histórico de empréstimos ou reservas, pra não
+perder o histórico. Quando isso acontece a API responde `409` explicando; se a ideia é só tirar o usuário
+de circulação, o caminho é inativá-lo nesse mesmo `PUT` com `"ativo": false`.
 
 ### Empréstimos
 - `POST /emprestimos` – registra e calcula a previsão de devolução

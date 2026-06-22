@@ -108,6 +108,33 @@ class EmprestimoFluxoIntegrationTest {
     }
 
     @Test
+    void excluirUsuarioComHistoricoDeEmprestimoEhBloqueadoComRegraDeNegocio() {
+        LivroResponse livro = novoLivro(1);
+        UsuarioResponse usuario = novoUsuario();
+
+        EmprestimoResponse emp = emprestimoService.emprestar(new EmprestimoRequest(livro.id(), usuario.id()));
+        emprestimoService.devolver(emp.id());
+
+        // mesmo depois de devolver, o emprestimo continua no historico -> exclusao barrada com mensagem clara
+        assertThatThrownBy(() -> usuarioService.excluir(usuario.id()))
+                .isInstanceOf(RegraNegocioException.class)
+                .hasMessageContaining("historico de emprestimos");
+    }
+
+    @Test
+    void excluirLivroComHistoricoDeEmprestimoEhBloqueadoComRegraDeNegocio() {
+        LivroResponse livro = novoLivro(1);
+        UsuarioResponse usuario = novoUsuario();
+
+        EmprestimoResponse emp = emprestimoService.emprestar(new EmprestimoRequest(livro.id(), usuario.id()));
+        emprestimoService.devolver(emp.id());
+
+        assertThatThrownBy(() -> livroService.excluir(livro.id()))
+                .isInstanceOf(RegraNegocioException.class)
+                .hasMessageContaining("historico de emprestimos");
+    }
+
+    @Test
     void relatorioLivrosMaisEmprestadosRetornaOrdenadoPorQuantidade() {
         LivroResponse popular = novoLivro(5);
         LivroResponse menosPopular = novoLivro(5);

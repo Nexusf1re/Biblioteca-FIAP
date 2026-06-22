@@ -20,6 +20,11 @@ public interface EmprestimoRepository extends JpaRepository<Emprestimo, Long> {
 
     boolean existsByUsuarioIdAndStatus(Long usuarioId, StatusEmprestimo status);
 
+    // qualquer emprestimo (de qualquer status) - usado pra barrar exclusao que apagaria o historico
+    boolean existsByLivroId(Long livroId);
+
+    boolean existsByUsuarioId(Long usuarioId);
+
     // Livros mais emprestados, do mais pro menos. Passar PageRequest.of(0,20) pra pegar o top 20.
     @Query("""
             SELECT new com.fiap.biblioteca.dto.report.LivroMaisEmprestadoResponse(

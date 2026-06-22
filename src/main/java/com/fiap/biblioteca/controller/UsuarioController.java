@@ -59,7 +59,9 @@ public class UsuarioController {
         return usuarioService.buscarPorId(id);
     }
 
-    @Operation(summary = "Altera um usuario existente")
+    @Operation(summary = "Altera um usuario existente",
+            description = "Atualiza nome, e-mail e tipo. O campo 'ativo' e opcional: envie false para inativar o "
+                    + "usuario (inativo nao empresta nem reserva) ou true para reativar; se omitido, mantem o valor atual.")
     @PutMapping("/{id}")
     public UsuarioResponse atualizar(@PathVariable Long id, @Valid @RequestBody UsuarioRequest req) {
         return usuarioService.atualizar(id, req);

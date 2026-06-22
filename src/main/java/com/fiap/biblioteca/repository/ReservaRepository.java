@@ -14,6 +14,11 @@ public interface ReservaRepository extends JpaRepository<Reserva, Long> {
 
     boolean existsByLivroIdAndUsuarioIdAndStatus(Long livroId, Long usuarioId, StatusReserva status);
 
+    // qualquer reserva (de qualquer status) - usado pra barrar exclusao de livro/usuario referenciado
+    boolean existsByLivroId(Long livroId);
+
+    boolean existsByUsuarioId(Long usuarioId);
+
     // primeiro da fila (mais antigo) - usado quando devolvem o livro
     Optional<Reserva> findFirstByLivroIdAndStatusOrderByDataReservaAsc(Long livroId, StatusReserva status);
 }

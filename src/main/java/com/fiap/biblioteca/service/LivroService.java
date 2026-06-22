@@ -9,6 +9,7 @@ import com.fiap.biblioteca.exception.RecursoNaoEncontradoException;
 import com.fiap.biblioteca.exception.RegraNegocioException;
 import com.fiap.biblioteca.repository.EmprestimoRepository;
 import com.fiap.biblioteca.repository.LivroRepository;
+import com.fiap.biblioteca.repository.ReservaRepository;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,10 +21,14 @@ public class LivroService {
 
     private final LivroRepository livroRepository;
     private final EmprestimoRepository emprestimoRepository;
+    private final ReservaRepository reservaRepository;
 
-    public LivroService(LivroRepository livroRepository, EmprestimoRepository emprestimoRepository) {
+    public LivroService(LivroRepository livroRepository,
+                        EmprestimoRepository emprestimoRepository,
+                        ReservaRepository reservaRepository) {
         this.livroRepository = livroRepository;
         this.emprestimoRepository = emprestimoRepository;
+        this.reservaRepository = reservaRepository;
     }
 
     @Transactional
@@ -101,6 +106,15 @@ public class LivroService {
         // se ainda tem livro emprestado nao deixa apagar, senao perde o vinculo
         if (emprestimoRepository.existsByLivroIdAndStatus(id, StatusEmprestimo.ATIVO)) {
             throw new RegraNegocioException("Nao e possivel excluir um livro que possui emprestimos ativos");
+        }
+        // emprestimos ja devolvidos continuam referenciando o livro (FK); apagar perderia o historico
+        if (emprestimoRepository.existsByLivroId(id)) {
+            throw new RegraNegocioException(
+                    "Nao e possivel excluir um livro que possui historico de emprestimos");
+        }
+        if (reservaRepository.existsByLivroId(id)) {
+            throw new RegraNegocioException(
+                    "Nao e possivel excluir um livro que possui reservas registradas");
         }
         livroRepository.delete(livro);
     }
